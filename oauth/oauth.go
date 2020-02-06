@@ -23,14 +23,14 @@ const (
 var (
 	oauthRestClient = rest.RequestBuilder{
 		BaseURL: "http://localhost:9096",
-		Timeout: 200 * time.Millisecond,
+		Timeout: 2500 * time.Millisecond,
 	}
 )
 
 type accessToken struct {
-	Id       string `json:"id"`
-	UserId   int64  `json:"user_id"`
-	ClientId int64  `json:"client_id"`
+	UserId   	string  `json:"user_id"`
+	ExpiresIn int64 	`json:"expires_in"`
+	ClientId 	string  `json:"client_id"`
 }
 
 func IsPublic(request *http.Request) bool {
@@ -68,8 +68,16 @@ func AuthenticateRequest(request *http.Request) rest_errors.RestErr {
 	}
 
 	cleanRequest(request)
+	accessTokenId := ""
+	authorizationHeader := request.Header.Get("Authorization")
+	if authorizationHeader != "" {
+		bearerToken := strings.Split(authorizationHeader, " ")
+		if len(bearerToken) == 2 {
+			accessTokenId = bearerToken[1]
+		}
+	}
 
-	accessTokenId := strings.TrimSpace(request.URL.Query().Get(paramAccessToken))
+	//accessTokenId := strings.TrimSpace(request.URL.Query().Get(paramAccessToken))
 	if accessTokenId == "" {
 		return nil
 	}
@@ -95,7 +103,7 @@ func cleanRequest(request *http.Request) {
 }
 
 func getAccessToken(accessTokenId string) (*accessToken, rest_errors.RestErr) {
-	response := oauthRestClient.Get(fmt.Sprintf("/oauth/access_token/%s", accessTokenId))
+	response := oauthRestClient.Get(fmt.Sprintf("/test?access_token=%s", accessTokenId))
 	if response == nil || response.Response == nil {
 		return nil, rest_errors.NewInternalServerError("invalid restclient response when trying to get access token",
 			errors.New("network timeout"))
