@@ -108,8 +108,11 @@ func getAccessToken(accessTokenId string) (*accessToken, rest_errors.RestErr) {
 		return nil, rest_errors.NewInternalServerError("invalid restclient response when trying to get access token",
 			errors.New("network timeout"))
 	}
-
 	if response.StatusCode > 299 {
+		if strings.TrimSpace(response.String()) == "expired access token" {
+			restErr := rest_errors.NewUnauthorizedError(response.String())
+			return nil, restErr
+		}
 		restErr, err := rest_errors.NewRestErrorFromBytes(response.Bytes())
 		if err != nil {
 			return nil, rest_errors.NewInternalServerError("invalid error interface when trying to get access token", err)
